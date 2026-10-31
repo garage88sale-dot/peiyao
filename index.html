@@ -27,7 +27,6 @@
 </head>
 <body>
 
-<!-- 1. 次数、天数 -->
 <div class="row-top">
   <input class="short" id="timesPerDay" type="number" value="2">
   <span class="label-txt">次</span>
@@ -35,27 +34,21 @@
   <span class="label-txt">天</span>
 </div>
 
-<!-- 2. 中药列表 -->
 <div id="list"></div>
 
-<!-- 添加中药、清空处方（清空红色） -->
 <div class="row-btn">
   <button class="btn" onclick="addRow()">添加中药</button>
   <button class="btn btn-danger" onclick="clearAll()">清空药方</button>
 </div>
 
-<!-- 3. 总重量 -->
 <div class="total-line">总重量：<span id="totalWeight">0.00</span> g</div>
 
-<!-- 4. 服法 -->
 <input id="method" placeholder="服法">
 
-<!-- 存档面板，点载入存档才显示 -->
 <div id="archivePanel" class="archive-panel" style="display:none;">
   <div id="archiveList"></div>
 </div>
 
-<!-- 5. 其余按钮 -->
 <div class="row-btn">
   <button class="btn" onclick="toggleArchive()">载入存档</button>
   <button class="btn" onclick="savePrescription()">保存</button>
@@ -91,19 +84,26 @@ function getParams() {
 }
 
 let data = [];
+
+function isValidNumber(val) {
+  return /^\d+(\.\d{0,2})?$/.test(val);
+}
+
 function render() {
   $('list').innerHTML = '';
   const { times, days } = getParams();
   let sumTotal = 0;
   data.forEach((it, idx) => {
-    const single = Number(it.dose) || 0;
+    const single = parseFloat(it.dose) || 0;
     const total = single * times * days;
     sumTotal += total;
     const div = document.createElement('div');
     div.className = 'item-row';
     div.innerHTML = `
-      <input placeholder="药名" value="${it.name || ''}" onchange="update(${idx},'name',this.value)" />
-      <input type="number" step="0.01" placeholder="单次(g)" value="${it.dose || ''}" oninput="update(${idx},'dose',Number(this.value));render()" />
+      <input placeholder="药名" value="${it.name || ''}"
+             onchange="update(${idx},'name',this.value)" />
+      <input placeholder="单次(g)" value="${it.dose ?? ''}"
+             oninput="doseInput(${idx},this)" />
       <span class="weight-text">${total.toFixed(2)}g</span>
       <button class="btn-sm" onclick="del(${idx})">−</button>
     `;
@@ -111,6 +111,25 @@ function render() {
   });
   $('totalWeight').textContent = sumTotal.toFixed(2);
   saveWorking();
+}
+
+function doseInput(idx, el) {
+  let v = el.value;
+  if (v === '' || isValidNumber(v)) {
+    data[idx].dose = v;
+    render();
+  } else {
+    el.value = data[idx].dose ?? '';
+  }
+}
+
+function update(i, k, v) {
+  data[i][k] = v;
+  render();
+}
+function del(i) { data.splice(i, 1); render(); }
+function clearAll() {
+  if (confirm('确定清空药方？')) { data = []; render(); }
 }
 
 function renderArchiveList() {
@@ -151,7 +170,7 @@ function loadArchive(idx) {
 
 function delArchive(idx) {
   if (!confirm('确定删除这条存档？')) return;
-  archive.splice(idx,1);
+  archive.splice(idx, 1);
   saveArchive();
   renderArchiveList();
 }
@@ -166,14 +185,9 @@ function renameArchive(idx) {
   }
 }
 
-function addRow(){
-  data.unshift({name:'',dose:''});
+function addRow() {
+  data.unshift({ name: '', dose: '' });
   render();
-}
-function update(i,k,v){ data[i][k]=v; render(); }
-function del(i){ data.splice(i,1); render(); }
-function clearAll(){
-  if(confirm('确定清空药方？')){ data=[]; render(); }
 }
 
 function copyText() {
@@ -181,25 +195,23 @@ function copyText() {
   const method = $('method').value.trim();
   let out = `每日 ${times} 次，共 ${days} 天\n\n`;
   let sumTotal = 0;
-  data.forEach(it=>{
-    const single = Number(it.dose)||0;
+  data.forEach(it => {
+    const single = parseFloat(it.dose) || 0;
     const total = single * times * days;
-    if(it.name && total>0){
-      out += `${it.name}，${single}g，${total}g\n`;
-      sumTotal += total;
-    }
+    out += `${it.name || '无药名'}，${single.toFixed(2)}g，${total.toFixed(2)}g\n`;
+    sumTotal += total;
   })
   out += `\n总重：${sumTotal.toFixed(2)}g`;
-  if(method) out += `\n服法：${method}`;
+  if (method) out += `\n服法：${method}`;
   navigator.clipboard.writeText(out);
   alert('✅ 已复制抓药单');
 }
 
-function savePrescription(){
+function savePrescription() {
   const name = prompt('输入此方名称：');
   if (!name || !name.trim()) return;
-  const times = Number($('timesPerDay').value)||1;
-  const days = Number($('dayCount').value)||1;
+  const times = Number($('timesPerDay').value) || 1;
+  const days = Number($('dayCount').value) || 1;
   const method = $('method').value;
   archive.push({
     name: name.trim(),
@@ -212,31 +224,33 @@ function savePrescription(){
   alert('✅ 已保存：' + name.trim());
 }
 
-function exportBackup(){
+function exportBackup() {
   const payload = { archive, savedAt: new Date().toLocaleString() };
-  const blob = new Blob([JSON.stringify(payload,null,2)], {type:'application/json'});
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `药方备份_${new Date().toISOString().slice(0,10)}.json`;
+  a.download = `药方备份_${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
   URL.revokeObjectURL(url);
 }
 
-function importBackup(input){
+function importBackup(input) {
   const file = input.files[0];
-  if(!file) return;
+  if (!file) return;
   const reader = new FileReader();
-  reader.onload = e=>{
-    try{
+  reader.onload = e => {
+    try {
       const obj = JSON.parse(e.target.result);
-      if(!Array.isArray(obj.archive)) throw '格式错误';
-      if(confirm('导入会覆盖全部存档，确定？')){
+      if (!Array.isArray(obj.archive)) throw '格式错误';
+      if (confirm('导入会覆盖全部存档，确定？')) {
         archive = obj.archive;
         saveArchive();
         alert('✅ 导入成功！点载入存档查看');
       }
-    }catch{ alert('❌ 文件无效'); }
+    } catch {
+      alert('❌ 文件无效');
+    }
   }
   reader.readAsText(file);
 }
