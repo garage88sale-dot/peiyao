@@ -5,120 +5,57 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>配药计算器</title>
 <meta name="theme-color" content="#2b70c9" />
-<link rel="manifest" href="./manifest.json" />
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Crect width='180' height='180' rx='24' fill='%232b70c9'/%3E%3Ctext x='90' y='110' font-size='80' fill='white' text-anchor='middle'%3E药%3C/text%3E%3C/svg%3E" />
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-  body { padding: 16px; background: #f4f7f6; font-size: 16px; }
-  .box { background: #fff; border-radius: 16px; padding: 18px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
-  h3 { margin-bottom: 14px; color: #222; font-size: 19px; }
-  .row { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
-  .input-wrap { display:flex; gap:4px; align-items:center; flex:1; }
-  input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 12px; font-size: 16px; min-width: 0; }
-  .unit { white-space:nowrap; color:#444; }
-  .btn { padding: 12px; border: none; border-radius: 12px; background: #2b70c9; color: #fff; font-size: 16px; }
-  .btn-sm { padding: 7px 10px; font-size: 14px; }
-  .btn-danger { background: #e64949; }
-  .item { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: nowrap; }
-  .item input { flex: 1; }
-  .weight-text { min-width: 72px; text-align: right; color:#333; font-weight: 500; }
-  .action-bar { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
-  #installBtn { width: 100%; margin-bottom: 12px; }
-  .total-box { background: #eaf2f8; border-left: 4px solid #2b70c9; }
-  .big { font-size: 22px; color: #1f5a99; font-weight: 700; }
-  .prescription-item {
-    padding: 10px;
-    background: #f0f4f8;
-    border-radius: 12px;
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    margin-bottom: 8px;
-  }
-  .backup-area {
-    margin-top: 10px;
-  }
+  body { padding: 18px; background: #f4f7f6; font-size: 17px; }
+  .row-top { display: flex; gap: 16px; align-items: center; margin-bottom: 18px; }
+  .row-btn { display: flex; gap: 12px; margin-bottom: 18px; }
+  .item-row { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: nowrap; }
+  .item-row input { flex: 1; }
+  .weight-text { min-width: 70px; text-align: right; color:#333; font-weight: 500; }
+  .total-line { font-size: 20px; margin:16px 0; color:#222; }
+  #method { width: 100%; padding:14px; border:1px solid #ddd; border-radius:12px; font-size:17px; margin-bottom:18px; }
+  .btn { flex:1; padding:14px; border:none; border-radius:12px; background:#2b70c9; color:#fff; font-size:17px; }
+  .btn-sm { padding:8px 11px; font-size:15px; }
+  .btn-danger { background:#e64949; }
+  input.short { width: 90px; padding:12px; border:1px solid #ddd; border-radius:12px; font-size:17px; }
+  .label-txt { margin:0 6px; }
 </style>
 </head>
 <body>
 
-<div class="box">
-  <h3>处方存档</h3>
-  <div class="row">
-    <input id="prescriptionName" placeholder="处方名称">
-    <button class="btn" onclick="savePrescription()">💾 保存当前方子</button>
-  </div>
-  <div class="row">
-    <div class="input-wrap">
-      <input id="timesPerDay" type="number" value="2" />
-      <span class="unit">次</span>
-    </div>
-    <div class="input-wrap">
-      <input id="dayCount" type="number" value="7" />
-      <span class="unit">天</span>
-    </div>
-  </div>
-  <div id="prescriptionList"></div>
-
-  <div class="backup-area">
-    <h4 style="margin:12px 0 8px">备份管理</h4>
-    <div class="row">
-      <button class="btn" onclick="exportBackup()">📤 导出备份</button>
-      <button class="btn" onclick="document.getElementById('importFile').click()">📥 导入备份</button>
-      <input type="file" id="importFile" accept=".json" hidden onchange="importBackup(this)" />
-    </div>
-  </div>
+<div class="row-top">
+  <input class="short" id="timesPerDay" type="number" value="2">
+  <span class="label-txt">次</span>
+  <input class="short" id="dayCount" type="number" value="7">
+  <span class="label-txt">天</span>
 </div>
 
-<div class="box">
-  <button id="installBtn" class="btn" onclick="triggerInstall()">📲 安装到桌面</button>
-  <h3>药方</h3>
-  <div id="list"></div>
-  <div class="action-bar">
-    <button class="btn" style="flex:1" onclick="addRow()">➕ 添加中药</button>
-    <button class="btn btn-danger" onclick="clearAll()">🗑️ 清空药方</button>
-  </div>
+<div class="row-btn">
+  <button class="btn" onclick="addRow()">添加中药</button>
+  <button class="btn btn-danger" onclick="clearAll()">清空药方</button>
 </div>
 
-<div class="box total-box">
-  <h3>总重量</h3>
-  <div class="big" id="totalWeight">0.00g</div>
-  <div style="margin-top:12px">
-    <input id="method" placeholder="服法：例如 饭后温服，一日一剂" style="width:100%" />
-  </div>
+<div id="list"></div>
+
+<div class="total-line">总重量：<span id="totalWeight">0.00</span> g</div>
+
+<input id="method" placeholder="服法">
+
+<div class="row-btn">
+  <button class="btn" onclick="copyText()">复制单</button>
+  <button class="btn" onclick="savePrescription()">保存</button>
 </div>
 
-<div class="box">
-  <button class="btn" style="width:100%" onclick="copyText()">📋 复制抓药单</button>
+<div class="row-btn">
+  <button class="btn" onclick="exportBackup()">导出备份</button>
+  <button class="btn" onclick="document.getElementById('importFile').click()">导入备份</button>
+  <input type="file" id="importFile" accept=".json" hidden onchange="importBackup(this)" />
 </div>
 
 <script>
-let deferredPrompt;
-const installBtn = document.getElementById('installBtn');
-
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  deferredPrompt = e;
-  installBtn.style.display = 'block';
-});
-async function triggerInstall() {
-  if (!deferredPrompt) { alert('❌ 当前浏览器暂不支持安装'); return; }
-  installBtn.disabled = true;
-  await deferredPrompt.prompt();
-  const res = await deferredPrompt.userChoice;
-  alert(res.outcome === 'accepted' ? '✅ 已提交安装请求' : '取消安装');
-  deferredPrompt = null;
-  installBtn.style.display = 'none';
-}
-
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js', { scope: './' })
-    .catch(err => console.error('SW', err));
-}
-
 let archive = JSON.parse(localStorage.getItem('prescriptionArchive') || '[]');
 let working = JSON.parse(localStorage.getItem('workingPrescription') || '{"list":[],"times":2,"days":7,"method":""}');
-
 const $ = id => document.getElementById(id);
 
 function saveWorking() {
@@ -128,60 +65,9 @@ function saveWorking() {
   working.method = $('method').value;
   localStorage.setItem('workingPrescription', JSON.stringify(working));
 }
-
 function saveArchive() {
   localStorage.setItem('prescriptionArchive', JSON.stringify(archive));
 }
-
-function renderArchive() {
-  $('prescriptionList').innerHTML = '';
-  archive.forEach((item, idx) => {
-    const div = document.createElement('div');
-    div.className = 'prescription-item';
-    div.innerHTML = `
-      <span style="flex:1">${item.name}</span>
-      <button class="btn btn-sm" onclick="loadPrescription(${idx})">载入</button>
-      <button class="btn btn-sm btn-danger" onclick="delArchive(${idx})">删</button>
-    `;
-    $('prescriptionList').appendChild(div);
-  })
-}
-
-function savePrescription() {
-  const name = $('prescriptionName').value.trim() || `处方 ${Date.now()}`;
-  const times = Number($('timesPerDay').value) || 1;
-  const days = Number($('dayCount').value) || 1;
-  const method = $('method').value;
-  archive.push({
-    name,
-    times,
-    days,
-    method,
-    list: JSON.parse(JSON.stringify(data))
-  });
-  saveArchive();
-  renderArchive();
-  alert(`✅【${name}】存入存档列表`);
-}
-
-function loadPrescription(idx) {
-  const p = archive[idx];
-  $('prescriptionName').value = p.name;
-  $('timesPerDay').value = p.times;
-  $('dayCount').value = p.days;
-  $('method').value = p.method || '';
-  data = JSON.parse(JSON.stringify(p.list));
-  render();
-  alert(`✅ 载入：${p.name}`);
-}
-
-function delArchive(idx) {
-  if (!confirm('确定删除这条存档？')) return;
-  archive.splice(idx,1);
-  saveArchive();
-  renderArchive();
-}
-
 function getParams() {
   return {
     times: Number($('timesPerDay').value) || 1,
@@ -190,19 +76,16 @@ function getParams() {
 }
 
 let data = [];
-
 function render() {
   $('list').innerHTML = '';
   const { times, days } = getParams();
   let sumTotal = 0;
-
   data.forEach((it, idx) => {
     const single = Number(it.dose) || 0;
     const total = single * times * days;
     sumTotal += total;
-
     const div = document.createElement('div');
-    div.className = 'item';
+    div.className = 'item-row';
     div.innerHTML = `
       <input placeholder="药名" value="${it.name || ''}" onchange="update(${idx},'name',this.value)" />
       <input placeholder="单次(g)" value="${it.dose || ''}" oninput="update(${idx},'dose',Number(this.value));render()" />
@@ -211,28 +94,15 @@ function render() {
     `;
     $('list').appendChild(div);
   });
-
-  $('totalWeight').textContent = sumTotal.toFixed(2) + 'g';
+  $('totalWeight').textContent = sumTotal.toFixed(2);
   saveWorking();
 }
 
-function addRow() {
-  data.push({ name: '', dose: '' });
-  render();
-}
-function update(i, k, v) {
-  data[i][k] = v;
-  render();
-}
-function del(i) {
-  data.splice(i, 1);
-  render();
-}
-function clearAll() {
-  if (confirm('确定清空药方？存档列表不会被删掉！')) {
-    data = [];
-    render();
-  }
+function addRow(){ data.push({name:'',dose:''}); render(); }
+function update(i,k,v){ data[i][k]=v; render(); }
+function del(i){ data.splice(i,1); render(); }
+function clearAll(){
+  if(confirm('确定清空药方？')){ data=[]; render(); }
 }
 
 function copyText() {
@@ -240,50 +110,55 @@ function copyText() {
   const method = $('method').value.trim();
   let out = `每日 ${times} 次，共 ${days} 天\n\n`;
   let sumTotal = 0;
-
-  data.forEach(it => {
-    const single = Number(it.dose) || 0;
+  data.forEach(it=>{
+    const single = Number(it.dose)||0;
     const total = single * times * days;
-    if (it.name && total > 0) {
+    if(it.name && total>0){
       out += `${it.name}，${single}g，${total}g\n`;
       sumTotal += total;
     }
-  });
-  out += `\n总重：${sumTotal}g`;
-  if (method) out += `\n服法：${method}`;
+  })
+  out += `\n总重：${sumTotal.toFixed(2)}g`;
+  if(method) out += `\n服法：${method}`;
   navigator.clipboard.writeText(out);
-  alert('✅ 抓药单已经复制！');
+  alert('✅ 已复制抓药单');
 }
 
-function exportBackup() {
+function savePrescription(){
+  const times = Number($('timesPerDay').value)||1;
+  const days = Number($('dayCount').value)||1;
+  const method = $('method').value;
+  archive.push({ times, days, method, list: JSON.parse(JSON.stringify(data)) });
+  saveArchive();
+  alert('✅ 方子已存入存档，导出备份可以全部保存');
+}
+
+function exportBackup(){
   const payload = { archive, savedAt: new Date().toLocaleString() };
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify(payload,null,2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `配药备份_${new Date().toISOString().slice(0,10)}.json`;
+  a.download = `药方备份_${new Date().toISOString().slice(0,10)}.json`;
   a.click();
   URL.revokeObjectURL(url);
 }
 
-function importBackup(input) {
+function importBackup(input){
   const file = input.files[0];
-  if (!file) return;
+  if(!file) return;
   const reader = new FileReader();
-  reader.onload = e => {
-    try {
+  reader.onload = e=>{
+    try{
       const obj = JSON.parse(e.target.result);
-      if (!Array.isArray(obj.archive)) throw new Error('格式不对');
-      if (confirm('导入会覆盖现有的全部存档，确定吗？')) {
+      if(!Array.isArray(obj.archive)) throw '格式错误';
+      if(confirm('导入会覆盖全部存档，确定？')){
         archive = obj.archive;
         saveArchive();
-        renderArchive();
-        alert('✅ 备份导入成功');
+        alert('✅ 导入成功！现在载入需要我再加一个【载入存档】按钮吗？');
       }
-    } catch (err) {
-      alert('❌ 文件无效，不是配药备份');
-    }
-  };
+    }catch{ alert('❌ 文件无效'); }
+  }
   reader.readAsText(file);
 }
 
@@ -291,10 +166,7 @@ $('timesPerDay').value = working.times ?? 2;
 $('dayCount').value = working.days ?? 7;
 $('method').value = working.method ?? '';
 data = working.list ?? [];
-
 render();
-renderArchive();
 </script>
-
 </body>
 </html>
