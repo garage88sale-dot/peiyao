@@ -106,7 +106,16 @@ function render() {
   groups.forEach((g, gid) => {
     const block = document.createElement('div');
     block.className = 'prescription-block';
-    let sub = 0;
+    let onceTotal = 0;
+    const t = rawNum(g.times);
+    const d = rawNum(g.days);
+
+    g.list.forEach(it => {
+      onceTotal += doseVal(it.dose);
+    });
+    const total = onceTotal * t * d;
+    grand += total;
+
     let html = `
       <div class="row-top">
         <input class="short" value="${g.times}"
@@ -123,8 +132,7 @@ function render() {
     `;
     g.list.forEach((it, lid) => {
       const s = doseVal(it.dose);
-      const rowTotal = s * rawNum(g.times) * rawNum(g.days);
-      sub += rowTotal;
+      const rowTotal = s * t * d;
       html += `
         <div class="item-row">
           <input class="inp-name" placeholder="药名" value="${it.name||''}"
@@ -137,8 +145,7 @@ function render() {
         </div>
       `;
     });
-    grand += sub;
-    html += `<div class="group-subtotal">本组小计：${sub.toFixed(2)} g</div>`;
+    html += `<div class="group-subtotal">1 次量 : ${onceTotal.toFixed(2)} g   ${d}天量 : ${total.toFixed(2)} g</div>`;
     html += `<input class="method" placeholder="服法" value="${g.method||''}" oninput="updateGroup(${gid},'method',this.value)">`;
     block.innerHTML = html;
     wrap.appendChild(block);
@@ -229,73 +236,60 @@ function renameArchive(idx) {
   const n = prompt('存档名：', old);
   if (n && n.trim()) { archive[idx].name = n.trim(); saveArchive(); renderArchiveList(); }
 }
-
-function copyText() {
-  let out = '';
-  groups.forEach((g, gi) => {
-    const t = rawNum(g.times);
-    const d = rawNum(g.days);
-    out += `【药方 ${gi+1}】\n每日 ${t.toFixed(2)} 次，共 ${d.toFixed(2)} 天\n\n`;
-    let sum = 0;
-    g.list.forEach(it => {
-      const s = doseVal(it.dose);
-      const rowTotal = s * t * d;
-      sum += rowTotal;
-      out += `${(it.name||'').trim() || '无名药'}，${s.toFixed(2)}g，${rowTotal.toFixed(2)}g\n`;
-    });
-    out += `本组小计：${sum.toFixed(2)}g`;
-    if (g.method?.trim()) out += `\n服法：${g.method.trim()}`;
-    out += '\n\n';
-  });
-  let grand = 0;
-  groups.forEach(g => {
-    const t = rawNum(g.times);
-    const d = rawNum(g.days);
-    g.list.forEach(it => grand += doseVal(it.dose) * t * d);
-  });
-  out += `==== 全部合计：${grand.toFixed(2)} g ====`;
-  navigator.clipboard.writeText(out);
-  alert('✅ 已复制全部药方');
-}
 function savePrescription() {
-  const name = prompt('整套药方存档名称：');
+  const name = prompt('给这套药方起名：');
   if (!name || !name.trim()) return;
   archive.push({ name: name.trim(), groups: JSON.parse(JSON.stringify(groups)) });
   saveArchive();
-  alert('✅ 已保存整套');
+  alert('✅ 保存成功');
+}
+function copyText() {
+  let out = '';
+  groups.forEach(g => {
+    const t = rawNum(g.times);
+    const d = rawNum(g.days);
+    let once = 0;
+    g.list.forEach(it => once += doseVal(it.dose));
+    const total = once * t * d;
+    out += `【药方】${t}次 / ${d}天\n`;
+    g.list.forEach(it => {
+      if (!it.name && !it.dose) return;
+      out += `${it.name || '？'}：${it.dose} g\n`;
+    })
+    out += `1 次量：${once.toFixed(2)} g，${d}天量：${total.toFixed(2)} g\n`;
+    if (g.method) out += `服法：${g.method}\n`;
+    out += '\n';
+  })
+  navigator.clipboard.writeText(out).then(() => alert('✅ 已复制'));
 }
 function exportBackup() {
-  const payload = { archive, savedAt: new Date().toLocaleString() };
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify(archive, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `多药方备份_${new Date().toISOString().slice(0,10)}.json`;
+  a.download = '药方备份.json';
   a.click();
-  URL.revokeObjectURL(url);
 }
-function importBackup(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const r = new FileReader();
-  r.onload = e => {
+function importBackup(f) {
+  const fr = new FileReader();
+  fr.onload = () => {
     try {
-      const obj = JSON.parse(e.target.result);
-      if (!Array.isArray(obj.archive)) throw 'bad';
-      if (confirm('导入将覆盖存档？')) {
-        archive = obj.archive;
-        saveArchive();
-        renderArchiveList();
-        alert('✅ 导入成功');
-      }
-    } catch { alert('❌ 文件无效'); }
-  };
-  r.readAsText(file);
+      const arr = JSON.parse(fr.result);
+      if (!Array.isArray(arr)) throw 1;
+      archive = archive.concat(arr);
+      saveArchive();
+      alert('✅ 导入成功');
+      if (archiveOpen) renderArchiveList();
+    } catch { alert('❌ 文件不对'); }
+  }
+  fr.readAsText(f.files[0]);
 }
 
-groups = Array.isArray(working.groups) ? JSON.parse(JSON.stringify(working.groups)) : [ emptyGroup() ];
-groups.forEach(g => ensureMinRows(g.list));
-render();
+(function boot() {
+  groups = JSON.parse(JSON.stringify(working.groups));
+  groups.forEach(g => ensureMinRows(g.list));
+  render();
+})();
 </script>
 </body>
 </html>
