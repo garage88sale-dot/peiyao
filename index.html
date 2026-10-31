@@ -117,8 +117,8 @@ function render() {
           oninput="updateGroupLive(${gid},'days',this)"
           onblur="render()">
         <span class="label-txt">天</span>
-        <button class="btn-sm blue" onclick="addLine(${gid})">+行</button>
-        <button class="btn-sm" onclick="delGroup(${gid})">删此方</button>
+        <button class="btn-sm blue" onclick="addLine(${gid})">加药</button>
+        <button class="btn-sm" onclick="delGroup(${gid})">删方</button>
       </div>
     `;
     g.list.forEach((it, lid) => {
