@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>配药计算器｜多药方</title>
+<title>配药计算器｜累计红字</title>
 <meta name="theme-color" content="#2b70c9" />
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
@@ -11,10 +11,11 @@
   .prescription-block { background:#fff; padding:16px; border-radius:14px; margin-bottom:16px; box-shadow:0 1px 4px #00000018; }
   .row-top { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; flex-wrap: nowrap; }
   .row-btn { display: flex; gap: 12px; margin-bottom: 16px; }
-  .item-row { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: nowrap; }
+  .item-row { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; flex-wrap: nowrap; }
   .inp-name { font-size: 17px; padding: 14px; border: 1px solid #ddd; border-radius: 10px; width: 0; flex: 2.8; }
   .inp-dose { font-size: 17px; padding: 14px; border: 1px solid #ddd; border-radius: 10px; width: 0; flex: 1.5; }
   .weight-text { min-width: 62px; text-align: right; color:#333; font-weight: 500; font-size:16px; }
+  .sum-line { display:flex; justify-content:flex-end; padding-right:70px; margin-bottom:8px; color:#dd2222; font-size:17px; }
   .group-subtotal { font-size: 19px; margin:12px 0; color:#444; }
   .sep { display: inline-block; width: 48px; }
   .total-line { font-size: 24px; margin:20px 0; color:#222; font-weight:bold; }
@@ -102,7 +103,7 @@ function saveArchive() {
 function render() {
   const wrap = $('container');
   wrap.innerHTML = '';
-  let grand = 0;
+  let grandTotalAll = 0;
 
   groups.forEach((g, gid) => {
     const block = document.createElement('div');
@@ -110,12 +111,6 @@ function render() {
     let onceTotal = 0;
     const t = rawNum(g.times);
     const d = rawNum(g.days);
-
-    g.list.forEach(it => {
-      onceTotal += doseVal(it.dose);
-    });
-    const total = onceTotal * t * d;
-    grand += total;
 
     let html = `
       <div class="row-top">
@@ -131,9 +126,12 @@ function render() {
         <button class="btn-sm" onclick="delGroup(${gid})">删方</button>
       </div>
     `;
+    let runningSum = 0;
     g.list.forEach((it, lid) => {
       const s = doseVal(it.dose);
       const rowTotal = s * t * d;
+      runningSum += rowTotal;
+      onceTotal += rowTotal;
       html += `
         <div class="item-row">
           <input class="inp-name" placeholder="药名" value="${it.name||''}"
@@ -144,15 +142,17 @@ function render() {
           <span class="weight-text">${rowTotal.toFixed(2)}g</span>
           <button class="btn-sm" onclick="delLine(${gid},${lid})">−</button>
         </div>
+        <div class="sum-line">${runningSum.toFixed(2)}</div>
       `;
     });
-    html += `<div class="group-subtotal">1 次量 : ${onceTotal.toFixed(2)}g <span class="sep"></span> ${d}天量 : ${total.toFixed(2)}g</div>`;
+    grandTotalAll += onceTotal;
+    html += `<div class="group-subtotal">本帖合计：${onceTotal.toFixed(2)}g</div>`;
     html += `<input class="method" placeholder="服法" value="${g.method||''}" oninput="updateGroup(${gid},'method',this.value)">`;
     block.innerHTML = html;
     wrap.appendChild(block);
   });
 
-  $('grandTotal').textContent = grand.toFixed(2) + 'g';
+  $('grandTotal').textContent = grandTotalAll.toFixed(2);
   saveWorking();
 }
 
@@ -249,17 +249,16 @@ function copyText() {
   groups.forEach(g => {
     const t = rawNum(g.times);
     const d = rawNum(g.days);
-    let once = 0;
-    g.list.forEach(it => once += doseVal(it.dose));
-    const total = once * t * d;
     out += `【药方】${t}次 / ${d}天\n`;
+    let run = 0;
     g.list.forEach(it => {
       if (!it.name && !it.dose) return;
-      out += `${it.name || '？'}：${it.dose}g\n`;
+      const s = doseVal(it.dose);
+      const rowTotal = s * t * d;
+      run += rowTotal;
+      out += `${it.name || '？'}：${it.dose}g，该味总量 ${rowTotal.toFixed(2)}g，累计 ${run.toFixed(2)}g\n`;
     })
-    out += `1 次量：${once.toFixed(2)}g　　${d}天量：${total.toFixed(2)}g\n`;
-    if (g.method) out += `服法：${g.method}\n`;
-    out += '\n';
+    out += `本帖合计：${run.toFixed(2)}g\n服法：${g.method || ''}\n\n`;
   })
   navigator.clipboard.writeText(out).then(() => alert('✅ 已复制'));
 }
@@ -270,6 +269,7 @@ function exportBackup() {
   a.href = url;
   a.download = '药方备份.json';
   a.click();
+  URL.revokeObjectURL(url);
 }
 function importBackup(f) {
   const fr = new FileReader();
