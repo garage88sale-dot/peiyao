@@ -11,14 +11,13 @@
   .row-top { display: flex; gap: 16px; align-items: center; margin-bottom: 18px; }
   .row-btn { display: flex; gap: 12px; margin-bottom: 16px; }
   .item-row { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: nowrap; }
-  .item-row input { font-size: 17px; padding: 12px; border: 1px solid #ddd; border-radius: 10px; }
-  .inp-name { width: 32%; }
-  .inp-dose { width: 24%; }
+  .item-row input { font-size: 17px; padding: 12px; border: 1px solid #ddd; border-radius: 10px; width: 0; flex: 1; }
   .weight-text { min-width: 75px; text-align: right; color:#333; font-weight: 500; font-size:17px; }
   .total-line { font-size: 22px; margin:18px 0; color:#222; }
   #method { width: 100%; padding:16px; border:1px solid #ddd; border-radius:12px; font-size:19px; margin-bottom:22px; }
   .btn { flex:1; padding:16px; border:none; border-radius:12px; background:#2b70c9; color:#fff; font-size:19px; }
-  .btn-sm { padding: 10px; min-width: 54px; border:none; border-radius:10px; background:#e64949; color:#fff; font-size:17px; white-space: nowrap; }
+  .btn-danger { background:#e64949; }
+  .btn-sm { width: 40px; height: 40px; padding: 0; border:none; border-radius: 8px; background:#e64949; color:#fff; font-size:18px; display:grid; place-items:center; }
   input.short { width: 100px; padding:14px; border:1px solid #ddd; border-radius:12px; font-size:19px; }
   .label-txt { margin:0 8px; font-size:19px; }
   .archive-panel { background:#fff; padding:16px; border-radius:12px; margin: 12px 0; box-shadow: 0 1px 4px #00000018; }
@@ -39,10 +38,10 @@
 <!-- 2. 中药列表 -->
 <div id="list"></div>
 
-<!-- 添加中药、清空处方 -->
+<!-- 添加中药、清空处方（清空红色） -->
 <div class="row-btn">
   <button class="btn" onclick="addRow()">添加中药</button>
-  <button class="btn btn-danger" onclick="clearAll()">清空处方</button>
+  <button class="btn btn-danger" onclick="clearAll()">清空药方</button>
 </div>
 
 <!-- 3. 总重量 -->
@@ -103,8 +102,8 @@ function render() {
     const div = document.createElement('div');
     div.className = 'item-row';
     div.innerHTML = `
-      <input class="inp-name" placeholder="药名" value="${it.name || ''}" onchange="update(${idx},'name',this.value)" />
-      <input class="inp-dose" placeholder="单次(g)" value="${it.dose || ''}" oninput="update(${idx},'dose',Number(this.value));render()" />
+      <input placeholder="药名" value="${it.name || ''}" onchange="update(${idx},'name',this.value)" />
+      <input type="number" step="0.01" placeholder="单次(g)" value="${it.dose || ''}" oninput="update(${idx},'dose',Number(this.value));render()" />
       <span class="weight-text">${total.toFixed(2)}g</span>
       <button class="btn-sm" onclick="del(${idx})">−</button>
     `;
@@ -128,7 +127,7 @@ function renderArchiveList() {
       <span>${item.name}</span>
       <button class="btn-sm" style="background:#2b70c9;" onclick="loadArchive(${idx})">载入</button>
       <button class="btn-sm" style="background:#2b70c9;" onclick="renameArchive(${idx})">改名</button>
-      <button class="btn-sm" onclick="delArchive(${idx})">删除</button>
+      <button class="btn-sm" onclick="delArchive(${idx})">−</button>
     `;
     box.appendChild(line);
   })
@@ -174,7 +173,7 @@ function addRow(){
 function update(i,k,v){ data[i][k]=v; render(); }
 function del(i){ data.splice(i,1); render(); }
 function clearAll(){
-  if(confirm('确定清空处方？')){ data=[]; render(); }
+  if(confirm('确定清空药方？')){ data=[]; render(); }
 }
 
 function copyText() {
