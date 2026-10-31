@@ -11,7 +11,8 @@
   .row-top { display: flex; gap: 16px; align-items: center; margin-bottom: 18px; }
   .row-btn { display: flex; gap: 12px; margin-bottom: 16px; }
   .item-row { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: nowrap; }
-  .item-row input { font-size: 17px; padding: 12px; border: 1px solid #ddd; border-radius: 10px; width: 0; flex: 1; }
+  .inp-name { font-size: 17px; padding: 12px; border: 1px solid #ddd; border-radius: 10px; width: 0; flex: 2; }
+  .inp-dose { font-size: 17px; padding: 12px; border: 1px solid #ddd; border-radius: 10px; width: 0; flex: 1; }
   .weight-text { min-width: 75px; text-align: right; color:#333; font-weight: 500; font-size:17px; }
   .total-line { font-size: 22px; margin:18px 0; color:#222; }
   #method { width: 100%; padding:16px; border:1px solid #ddd; border-radius:12px; font-size:19px; margin-bottom:22px; }
@@ -85,8 +86,9 @@ function getParams() {
 
 let data = [];
 
-function isValidNumber(val) {
-  return /^\d+(\.\d{0,2})?$/.test(val);
+function goodNumber(v) {
+  if (v === '') return true;
+  return /^\d+(\.\d{1,2})?$/.test(v);
 }
 
 function render() {
@@ -100,10 +102,12 @@ function render() {
     const div = document.createElement('div');
     div.className = 'item-row';
     div.innerHTML = `
-      <input placeholder="药名" value="${it.name || ''}"
-             onchange="update(${idx},'name',this.value)" />
-      <input placeholder="单次(g)" value="${it.dose ?? ''}"
-             oninput="doseInput(${idx},this)" />
+      <input class="inp-name" placeholder="药名" value="${it.name || ''}"
+             oninput="updateName(${idx}, this.value)"
+             onblur="render()" />
+      <input class="inp-dose" placeholder="单次(g)" value="${it.dose ?? ''}"
+             oninput="checkDose(${idx}, this)"
+             onblur="render()" />
       <span class="weight-text">${total.toFixed(2)}g</span>
       <button class="btn-sm" onclick="del(${idx})">−</button>
     `;
@@ -113,23 +117,28 @@ function render() {
   saveWorking();
 }
 
-function doseInput(idx, el) {
-  let v = el.value;
-  if (v === '' || isValidNumber(v)) {
+function updateName(idx, val) {
+  data[idx].name = val;
+}
+
+function checkDose(idx, el) {
+  const v = el.value;
+  if (goodNumber(v)) {
     data[idx].dose = v;
-    render();
   } else {
     el.value = data[idx].dose ?? '';
   }
 }
 
-function update(i, k, v) {
-  data[i][k] = v;
+function del(i) {
+  data.splice(i, 1);
   render();
 }
-function del(i) { data.splice(i, 1); render(); }
 function clearAll() {
-  if (confirm('确定清空药方？')) { data = []; render(); }
+  if (confirm('确定清空药方？')) {
+    data = [];
+    render();
+  }
 }
 
 function renderArchiveList() {
@@ -230,7 +239,7 @@ function exportBackup() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `药方备份_${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = `药方备份_${new Date().toISOString().slice(0,10)}.json`;
   a.click();
   URL.revokeObjectURL(url);
 }
