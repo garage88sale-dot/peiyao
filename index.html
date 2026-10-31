@@ -11,7 +11,7 @@
   .row-top { display: flex; gap: 16px; align-items: center; margin-bottom: 18px; }
   .row-btn { display: flex; gap: 12px; margin-bottom: 16px; }
   .item-row { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: nowrap; }
-  .inp-name { font-size: 17px; padding: 12px; border: 1px solid #ddd; border-radius: 10px; width: 0; flex: 2; }
+  .inp-name { font-size: 17px; padding: 12px; border: 1px solid #ddd; border-radius: 10px; width: 0; flex: 3; }
   .inp-dose { font-size: 17px; padding: 12px; border: 1px solid #ddd; border-radius: 10px; width: 0; flex: 1; }
   .weight-text { min-width: 75px; text-align: right; color:#333; font-weight: 500; font-size:17px; }
   .total-line { font-size: 22px; margin:18px 0; color:#222; }
@@ -91,12 +91,18 @@ function goodNumber(v) {
   return /^\d+(\.\d{1,2})?$/.test(v);
 }
 
+// 空 → 返回 0
+function doseVal(raw) {
+  const n = parseFloat(raw);
+  return isNaN(n) ? 0 : n;
+}
+
 function render() {
   $('list').innerHTML = '';
   const { times, days } = getParams();
   let sumTotal = 0;
   data.forEach((it, idx) => {
-    const single = parseFloat(it.dose) || 0;
+    const single = doseVal(it.dose);
     const total = single * times * days;
     sumTotal += total;
     const div = document.createElement('div');
@@ -205,9 +211,11 @@ function copyText() {
   let out = `每日 ${times} 次，共 ${days} 天\n\n`;
   let sumTotal = 0;
   data.forEach(it => {
-    const single = parseFloat(it.dose) || 0;
+    const single = doseVal(it.dose);
     const total = single * times * days;
-    out += `${it.name || '无药名'}，${single.toFixed(2)}g，${total.toFixed(2)}g\n`;
+    if ((it.name || '').trim() || single > 0) {
+      out += `${(it.name || '').trim() || '无名药'}，${single.toFixed(2)}g，${total.toFixed(2)}g\n`;
+    }
     sumTotal += total;
   })
   out += `\n总重：${sumTotal.toFixed(2)}g`;
