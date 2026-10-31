@@ -29,9 +29,9 @@
 <body>
 
 <div class="row-top">
-  <input class="short" id="timesPerDay" type="number" value="2">
+  <input class="short" id="timesPerDay" type="number" value="0">
   <span class="label-txt">次</span>
-  <input class="short" id="dayCount" type="number" value="7">
+  <input class="short" id="dayCount" type="number" value="0">
   <span class="label-txt">天</span>
 </div>
 
@@ -49,7 +49,6 @@
 <div id="archivePanel" class="archive-panel" style="display:none;">
   <div id="archiveList"></div>
 </div>
-
 <div class="row-btn">
   <button class="btn" onclick="toggleArchive()">载入存档</button>
   <button class="btn" onclick="savePrescription()">保存</button>
@@ -63,7 +62,7 @@
 
 <script>
 let archive = JSON.parse(localStorage.getItem('prescriptionArchive') || '[]');
-let working = JSON.parse(localStorage.getItem('workingPrescription') || '{"list":[],"times":2,"days":7,"method":""}');
+let working = JSON.parse(localStorage.getItem('workingPrescription') || '{"list":[{"name":"","dose":""},{"name":"","dose":""},{"name":"","dose":""},{"name":"","dose":""},{"name":"","dose":""},"times":0,"days":0,"method":""}');
 const $ = id => document.getElementById(id);
 let archiveOpen = false;
 
@@ -145,7 +144,15 @@ function del(i) {
 }
 function clearAll() {
   if (confirm('确定清空药方？')) {
-    data = [];
+    data = [
+      { name: '', dose: '' },
+      { name: '', dose: '' },
+      { name: '', dose: '' },
+      { name: '', dose: '' },
+      { name: '', dose: '' }
+    ];
+    $('timesPerDay').value = 0;
+    $('dayCount').value = 0;
     render();
   }
 }
@@ -178,10 +185,16 @@ function toggleArchive() {
 
 function loadArchive(idx) {
   const s = archive[idx];
-  $('timesPerDay').value = s.times;
-  $('dayCount').value = s.days;
-  $('method').value = s.method;
-  data = JSON.parse(JSON.stringify(s.list));
+  $('timesPerDay').value = s.times ?? 0;
+  $('dayCount').value = s.days ?? 0;
+  $('method').value = s.method ?? '';
+  data = Array.isArray(s.list) ? s.list : [
+    { name: '', dose: '' },
+    { name: '', dose: '' },
+    { name: '', dose: '' },
+    { name: '', dose: '' },
+    { name: '', dose: '' }
+  ];
   render();
   alert('✅ 已载入：' + s.name);
 }
@@ -274,10 +287,16 @@ function importBackup(input) {
   reader.readAsText(file);
 }
 
-$('timesPerDay').value = working.times ?? 2;
-$('dayCount').value = working.days ?? 7;
+$('timesPerDay').value = working.times ?? 0;
+$('dayCount').value = working.days ?? 0;
 $('method').value = working.method ?? '';
-data = working.list ?? [];
+data = Array.isArray(working.list) ? working.list : [
+  { name: '', dose: '' },
+  { name: '', dose: '' },
+  { name: '', dose: '' },
+  { name: '', dose: '' },
+  { name: '', dose: '' }
+];
 render();
 </script>
 </body>
