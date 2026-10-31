@@ -1,106 +1,307 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>配药计算器</title>
-<meta name="theme-color" content="#2b78e4">
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Crect width='180' height='180' rx='24' fill='%232b78e4'/%3E%3Ctext x='90' y='110' font-size='80' fill='white' text-anchor='middle'%3E药%3C/text%3E%3C/svg%3E">
-<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22%E9%85%8D%E8%8D%AF%E8%AE%A1%E7%AE%97%E5%99%A8%22%2C%22short_name%22%3A%22%E9%85%8D%E8%8D%AF%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22theme_color%22%3A%22%232b78e4%22%2C%22background_color%22%3A%22%23ffffff%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%2520width%3D'192'%2520height%3D'192'%253E%253Crect%2520width%3D'192'%2520height%3D'192'%2520rx%3D'24'%2520fill%3D'%25232b78e4'%252F%253E%253Ctext%2520x%3D'96'%2520y%3D'116'%2520font-size%3D'84'%2520fill%3D'white'%2520text-anchor%3D'middle'%253E%E8%8D%AF%253C%2Ftext%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%2C%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%2520width%3D'512'%2520height%3D'512'%253E%253Crect%2520width%3D'512'%2520height%3D'512'%2520rx%3D'64'%2520fill%3D'%25232b78e4'%252F%253E%253Ctext%2520x%3D'256'%2520y%3D'310'%2520font-size%3D'220'%2520fill%3D'white'%2520text-anchor%3D'middle'%253E%E8%8D%AF%253C%2Ftext%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
+<meta name="theme-color" content="#3b8b7d" />
+<link rel="manifest" href="./manifest.json" />
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Crect width='180' height='180' rx='24' fill='%233b8b7d'/%3E%3Ctext x='90' y='110' font-size='80' fill='white' text-anchor='middle'%3E药%3C/text%3E%3C/svg%3E" />
 <style>
-*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-body{padding:16px;background:#f7f8fa}
-.box{background:#fff;border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
-h3{margin-bottom:12px;color:#222;font-size:18px}
-.row{display:flex;gap:10px;margin-bottom:10px}
-input{flex:1;padding:10px;border:1px solid #ddd;border-radius:10px;font-size:16px}
-.btn{padding:11px;border:none;border-radius:10px;background:#2b78e4;color:#fff;font-size:16px}
-.del{background:#ff4d4f}
-.item{display:flex;gap:10px;align-items:center;margin:10px 0}
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  body { padding: 16px; background: #f4f7f6; font-size: 16px; }
+  .box { background: #fff; border-radius: 16px; padding: 18px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+  h3 { margin-bottom: 14px; color: #222; font-size: 19px; }
+  .row { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 12px; font-size: 16px; min-width: 0; }
+  .btn { padding: 12px; border: none; border-radius: 12px; background: #3b8b7d; color: #fff; font-size: 16px; }
+  .btn-sm { padding: 7px 10px; font-size: 14px; }
+  .btn-danger { background: #e64949; }
+  .btn-blue { background: #2b70c9; }
+  .btn-green { background: #2f9e44; }
+  .item { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: nowrap; }
+  .item input { flex: 1; }
+  .weight-text { min-width: 72px; text-align: right; color:#333; font-weight: 500; }
+  .action-bar { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+  #installBtn { background: #2b70c9; display: none; width: 100%; margin-bottom: 12px; }
+  .total-box { background: #eaf4f1; border-left: 4px solid #3b8b7d; }
+  .big { font-size: 22px; color: #216b5f; font-weight: 700; }
+  .prescription-item {
+    padding: 10px;
+    background: #f0f4f3;
+    border-radius: 12px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .backup-area {
+    margin-top: 10px;
+  }
 </style>
 </head>
 <body>
+
 <div class="box">
-  <h3>参数（只填一次）</h3>
+  <h3>处方存档</h3>
   <div class="row">
-    <input id="times" type="number" value="2" placeholder="每日次数">
-    <input id="days" type="number" value="7" placeholder="天数">
+    <input id="prescriptionName" placeholder="处方名称">
+    <button class="btn btn-blue" onclick="savePrescription()">💾 保存当前方子</button>
+  </div>
+  <div id="prescriptionList"></div>
+
+  <div class="backup-area">
+    <h4 style="margin:12px 0 8px">备份管理</h4>
+    <div class="row">
+      <button class="btn btn-green" onclick="exportBackup()">📤 导出备份</button>
+      <button class="btn" onclick="document.getElementById('importFile').click()">📥 导入备份</button>
+      <input type="file" id="importFile" accept=".json" hidden onchange="importBackup(this)" />
+    </div>
   </div>
 </div>
 
 <div class="box">
-  <h3>药方</h3>
-  <div id="list"></div>
-  <button class="btn" onclick="addRow()">➕ 添加一味药</button>
+  <h3>处方参数</h3>
+  <div class="row">
+    <input id="timesPerDay" type="number" value="2" placeholder="每日几次" />
+    <input id="dayCount" type="number" value="7" placeholder="共几天" />
+  </div>
+  <div class="row">
+    <button class="btn" onclick="saveWorking()">✓ 手动保存当前编辑</button>
+  </div>
 </div>
 
 <div class="box">
-  <button class="btn" style="width:100%" onclick="copyText()">📋 复制清单（发给抓药）</button>
+  <button id="installBtn" class="btn" onclick="triggerInstall()">📲 安装到桌面</button>
+  <h3>药方</h3>
+  <div id="list"></div>
+  <div class="action-bar">
+    <button class="btn" style="flex:1" onclick="addRow()">➕ 添加药材</button>
+    <button class="btn btn-danger" onclick="clearAll()">🗑️ 清空当前药方</button>
+  </div>
+</div>
+
+<div class="box total-box">
+  <h3>总重量</h3>
+  <div class="big" id="totalWeight">0.00g</div>
+  <div style="margin-top:12px">
+    <input id="method" placeholder="服法：例如 饭后温服，一日一剂" style="width:100%" />
+  </div>
+</div>
+
+<div class="box">
+  <button class="btn" style="width:100%" onclick="copyText()">📋 复制抓药单</button>
 </div>
 
 <script>
-const swSource = `
-const CACHE_NAME = 'peiyao-v2';
-self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(['./'])));
-  self.skipWaiting();
+let deferredPrompt;
+const installBtn = document.getElementById('installBtn');
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  installBtn.style.display = 'block';
 });
-self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
-self.addEventListener('fetch', e => {
-  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
-});
-`;
-if ('serviceWorker' in navigator) {
-  const blob = new Blob([swSource], {type: 'application/javascript'});
-  const swUrl = URL.createObjectURL(blob);
-  navigator.serviceWorker.register(swUrl, {scope: './'}).catch(()=>{});
+async function triggerInstall() {
+  if (!deferredPrompt) { alert('❌ 当前浏览器暂不支持安装'); return; }
+  installBtn.disabled = true;
+  await deferredPrompt.prompt();
+  const res = await deferredPrompt.userChoice;
+  alert(res.outcome === 'accepted' ? '✅ 已提交安装请求' : '取消安装');
+  deferredPrompt = null;
+  installBtn.style.display = 'none';
 }
 
-let data = JSON.parse(localStorage.getItem('prescription') || '[]')
-const $ = id => document.getElementById(id)
-function save(){ localStorage.setItem('prescription', JSON.stringify(data)) }
-function render(){
-  $('list').innerHTML = ''
-  data.forEach((it,idx)=>{
-    const div = document.createElement('div')
-    div.className = 'item'
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js', { scope: './' })
+    .catch(err => console.error('SW', err));
+}
+
+let archive = JSON.parse(localStorage.getItem('prescriptionArchive') || '[]');
+// 当前编辑区，不再实时自动写入，由手动保存控制
+let working = JSON.parse(localStorage.getItem('workingPrescription') || '{"list":[],"times":2,"days":7,"method":""}');
+
+const $ = id => document.getElementById(id);
+
+function saveArchive() {
+  localStorage.setItem('prescriptionArchive', JSON.stringify(archive));
+}
+
+function saveWorking() {
+  working.list = JSON.parse(JSON.stringify(data));
+  working.times = Number($('timesPerDay').value) || 1;
+  working.days = Number($('dayCount').value) || 1;
+  working.method = $('method').value;
+  localStorage.setItem('workingPrescription', JSON.stringify(working));
+  alert('✅ 当前编辑已手动保存');
+}
+
+function renderArchive() {
+  $('prescriptionList').innerHTML = '';
+  archive.forEach((item, idx) => {
+    const div = document.createElement('div');
+    div.className = 'prescription-item';
     div.innerHTML = `
-      <input placeholder="药名" value="${it.name||''}" onchange="upd(${idx},'name',this.value)">
-      <input placeholder="单次(g)" value="${it.dose||''}" onchange="upd(${idx},'dose',Number(this.value))">
-      <span>${calcOne(it.dose)}g</span>
-      <button class="btn del" onclick="del(${idx})">−</button>
-    `
-    $('list').appendChild(div)
+      <span style="flex:1">${item.name}</span>
+      <button class="btn btn-sm" onclick="loadPrescription(${idx})">载入</button>
+      <button class="btn btn-sm btn-danger" onclick="delArchive(${idx})">删</button>
+    `;
+    $('prescriptionList').appendChild(div);
   })
 }
-function getParam(){
-  return { t: Number($('times').value)||1, d: Number($('days').value)||1 }
+
+function savePrescription() {
+  const name = $('prescriptionName').value.trim() || `处方 ${Date.now()}`;
+  const times = Number($('timesPerDay').value) || 1;
+  const days = Number($('dayCount').value) || 1;
+  const method = $('method').value;
+  archive.push({
+    name,
+    times,
+    days,
+    method,
+    list: JSON.parse(JSON.stringify(data))
+  });
+  saveArchive();
+  renderArchive();
+  alert(`✅【${name}】存入存档列表`);
 }
-function calcOne(v){
-  const {t,d}=getParam()
-  return ((Number(v)||0)*t*d).toFixed(2)
+
+function loadPrescription(idx) {
+  const p = archive[idx];
+  $('prescriptionName').value = p.name;
+  $('timesPerDay').value = p.times;
+  $('dayCount').value = p.days;
+  $('method').value = p.method || '';
+  data = JSON.parse(JSON.stringify(p.list));
+  render();
+  alert(`✅ 载入：${p.name}`);
 }
-function addRow(){ data.push({name:'',dose:''}); save(); render() }
-function upd(i,k,v){ data[i][k]=v; save(); render() }
-function del(i){ data.splice(i,1); save(); render() }
-function copyText(){
-  const {t,d}=getParam()
-  let s = `每日 ${t} 次，共 ${d} 天\n`
-  let sum = 0
-  data.forEach(it=>{
-    const total = Number(calcOne(it.dose))
-    if(it.name && total>0){
-      s += `${it.name}：${total}g\n`
-      sum += total
+
+function delArchive(idx) {
+  if (!confirm('确定删除这条存档？')) return;
+  archive.splice(idx,1);
+  saveArchive();
+  renderArchive();
+}
+
+function getParams() {
+  return {
+    times: Number($('timesPerDay').value) || 1,
+    days: Number($('dayCount').value) || 1
+  };
+}
+
+let data = [];
+
+function render() {
+  $('list').innerHTML = '';
+  const { times, days } = getParams();
+  let sumTotal = 0;
+
+  data.forEach((it, idx) => {
+    const single = Number(it.dose) || 0;
+    const daily = single * times;
+    const total = daily * days;
+    sumTotal += total;
+
+    const div = document.createElement('div');
+    div.className = 'item';
+    div.innerHTML = `
+      <input placeholder="药名" value="${it.name || ''}" onchange="update(${idx},'name',this.value)" />
+      <input placeholder="单次(g)" value="${it.dose || ''}" oninput="update(${idx},'dose',Number(this.value));render()" />
+      <span class="weight-text">${total.toFixed(2)}g</span>
+      <button class="btn btn-danger btn-sm" onclick="del(${idx})">−</button>
+    `;
+    $('list').appendChild(div);
+  });
+
+  $('totalWeight').textContent = sumTotal.toFixed(2) + 'g';
+}
+
+function addRow() {
+  data.push({ name: '', dose: '' });
+  render();
+}
+function update(i, k, v) {
+  data[i][k] = v;
+  render();
+}
+function del(i) {
+  data.splice(i, 1);
+  render();
+}
+function clearAll() {
+  if (confirm('确定清空当前药方？存档列表不会被删掉！')) {
+    data = [];
+    render();
+  }
+}
+
+function copyText() {
+  const { times, days } = getParams();
+  const method = $('method').value.trim();
+  let out = `每日 ${times} 次，共 ${days} 天\n\n`;
+  let sumTotal = 0;
+
+  data.forEach(it => {
+    const single = Number(it.dose) || 0;
+    const daily = single * times;
+    const total = daily * days;
+    if (it.name && total > 0) {
+      out += `${it.name}：单次 ${single.toFixed(2)}g｜一日 ${daily.toFixed(2)}g｜总量 ${total.toFixed(2)}g\n`;
+      sumTotal += total;
     }
-  })
-  s += `合计：${sum.toFixed(2)}g`
-  navigator.clipboard.writeText(s)
-  alert('✅ 药方已经复制')
+  });
+  out += `\n全部药材总重量：${sumTotal.toFixed(2)}g`;
+  if (method) out += `\n服法：${method}`;
+  navigator.clipboard.writeText(out);
+  alert('✅ 抓药单已经复制！');
 }
-render()
-$('times').oninput = render
-$('days').oninput = render
+
+// 备份导出
+function exportBackup() {
+  const payload = { archive, savedAt: new Date().toLocaleString() };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `配药备份_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// 备份导入
+function importBackup(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const obj = JSON.parse(e.target.result);
+      if (!Array.isArray(obj.archive)) throw new Error('格式不对');
+      if (confirm('导入会覆盖现有的全部存档，确定吗？')) {
+        archive = obj.archive;
+        saveArchive();
+        renderArchive();
+        alert('✅ 备份导入成功');
+      }
+    } catch (err) {
+      alert('❌ 文件无效，不是配药备份');
+    }
+  };
+  reader.readAsText(file);
+}
+
+// 加载上次手动保存的工作区
+$('timesPerDay').value = working.times ?? 2;
+$('dayCount').value = working.days ?? 7;
+$('method').value = working.method ?? '';
+data = working.list ?? [];
+
+render();
+renderArchive();
 </script>
+
 </body>
 </html>
