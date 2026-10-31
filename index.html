@@ -198,8 +198,7 @@ function render() {
 
   data.forEach((it, idx) => {
     const single = Number(it.dose) || 0;
-    const daily = single * times;
-    const total = daily * days;
+    const total = single * times * days;
     sumTotal += total;
 
     const div = document.createElement('div');
@@ -244,14 +243,13 @@ function copyText() {
 
   data.forEach(it => {
     const single = Number(it.dose) || 0;
-    const daily = single * times;
-    const total = daily * days;
+    const total = single * times * days;
     if (it.name && total > 0) {
-      out += `${it.name}：单次 ${single.toFixed(2)}g｜一日 ${daily.toFixed(2)}g｜总量 ${total.toFixed(2)}g\n`;
+      out += `${it.name}，${single}g，${total}g\n`;
       sumTotal += total;
     }
   });
-  out += `\n全部药材总重量：${sumTotal.toFixed(2)}g`;
+  out += `\n总重：${sumTotal}g`;
   if (method) out += `\n服法：${method}`;
   navigator.clipboard.writeText(out);
   alert('✅ 抓药单已经复制！');
