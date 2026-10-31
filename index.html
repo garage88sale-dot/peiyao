@@ -61,21 +61,23 @@
 </div>
 
 <script>
-let archive = JSON.parse(localStorage.getItem('prescriptionArchive') || '[]');
-let working = JSON.parse(localStorage.getItem('workingPrescription') || '{"list":[{"name":"","dose":""},{"name":"","dose":""},{"name":"","dose":""},{"name":"","dose":""},{"name":"","dose":""},"times":0,"days":0,"method":""}');
 const $ = id => document.getElementById(id);
+let archive = JSON.parse(localStorage.getItem('prescriptionArchive') || '[]');
+let workingDefault = {
+  list: [
+    { name: '', dose: '' },
+    { name: '', dose: '' },
+    { name: '', dose: '' },
+    { name: '', dose: '' },
+    { name: '', dose: '' }
+  ],
+  times: 0,
+  days: 0,
+  method: ''
+};
+let working = JSON.parse(localStorage.getItem('workingPrescription') || JSON.stringify(workingDefault));
+let data = [];
 let archiveOpen = false;
-
-function saveWorking() {
-  working.list = JSON.parse(JSON.stringify(data));
-  working.times = rawNum($('timesPerDay').value);
-  working.days = rawNum($('dayCount').value);
-  working.method = $('method').value;
-  localStorage.setItem('workingPrescription', JSON.stringify(working));
-}
-function saveArchive() {
-  localStorage.setItem('prescriptionArchive', JSON.stringify(archive));
-}
 
 function rawNum(v) {
   const n = parseFloat(v);
@@ -88,8 +90,6 @@ function getParams() {
   };
 }
 
-let data = [];
-
 function goodNumber(v) {
   if (v === '' || v === '.') return true;
   return /^\d+(\.\d{0,2})?$/.test(v);
@@ -97,6 +97,24 @@ function goodNumber(v) {
 function doseVal(raw) {
   const n = parseFloat(raw);
   return isNaN(n) ? 0 : n;
+}
+
+function ensureMinRows(arr) {
+  while (arr.length < 5) {
+    arr.push({ name: '', dose: '' });
+  }
+  return arr;
+}
+
+function saveWorking() {
+  working.list = JSON.parse(JSON.stringify(data));
+  working.times = rawNum($('timesPerDay').value);
+  working.days = rawNum($('dayCount').value);
+  working.method = $('method').value;
+  localStorage.setItem('workingPrescription', JSON.stringify(working));
+}
+function saveArchive() {
+  localStorage.setItem('prescriptionArchive', JSON.stringify(archive));
 }
 
 function render() {
@@ -140,21 +158,23 @@ function checkDose(idx, el) {
 
 function del(i) {
   data.splice(i, 1);
+  ensureMinRows(data);
   render();
 }
+
 function clearAll() {
   if (confirm('确定清空药方？')) {
-    data = [
-      { name: '', dose: '' },
-      { name: '', dose: '' },
-      { name: '', dose: '' },
-      { name: '', dose: '' },
-      { name: '', dose: '' }
-    ];
+    data = JSON.parse(JSON.stringify(workingDefault.list));
     $('timesPerDay').value = 0;
     $('dayCount').value = 0;
+    $('method').value = '';
     render();
   }
+}
+
+function addRow() {
+  data.push({ name: '', dose: '' });
+  render();
 }
 
 function renderArchiveList() {
@@ -185,16 +205,11 @@ function toggleArchive() {
 
 function loadArchive(idx) {
   const s = archive[idx];
-  $('timesPerDay').value = s.times ?? 0;
-  $('dayCount').value = s.days ?? 0;
+  $('timesPerDay').value = rawNum(s.times);
+  $('dayCount').value = rawNum(s.days);
   $('method').value = s.method ?? '';
-  data = Array.isArray(s.list) ? s.list : [
-    { name: '', dose: '' },
-    { name: '', dose: '' },
-    { name: '', dose: '' },
-    { name: '', dose: '' },
-    { name: '', dose: '' }
-  ];
+  data = Array.isArray(s.list) ? JSON.parse(JSON.stringify(s.list)) : [];
+  ensureMinRows(data);
   render();
   alert('✅ 已载入：' + s.name);
 }
@@ -214,11 +229,6 @@ function renameArchive(idx) {
     saveArchive();
     renderArchiveList();
   }
-}
-
-function addRow() {
-  data.unshift({ name: '', dose: '' });
-  render();
 }
 
 function copyText() {
@@ -287,16 +297,12 @@ function importBackup(input) {
   reader.readAsText(file);
 }
 
-$('timesPerDay').value = working.times ?? 0;
-$('dayCount').value = working.days ?? 0;
+// 初始化
+data = Array.isArray(working.list) ? JSON.parse(JSON.stringify(working.list)) : [];
+ensureMinRows(data);
+$('timesPerDay').value = rawNum(working.times);
+$('dayCount').value = rawNum(working.days);
 $('method').value = working.method ?? '';
-data = Array.isArray(working.list) ? working.list : [
-  { name: '', dose: '' },
-  { name: '', dose: '' },
-  { name: '', dose: '' },
-  { name: '', dose: '' },
-  { name: '', dose: '' }
-];
 render();
 </script>
 </body>
