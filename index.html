@@ -3,22 +3,25 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>配药计算器</title>
+<title>配药计算器｜多处方</title>
 <meta name="theme-color" content="#2b70c9" />
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
   body { padding: 18px; background: #f4f7f6; font-size: 19px; }
-  .row-top { display: flex; gap: 16px; align-items: center; margin-bottom: 18px; }
+  .prescription-block { background:#fff; padding:16px; border-radius:14px; margin-bottom:16px; box-shadow:0 1px 4px #00000018; }
+  .row-top { display: flex; gap: 16px; align-items: center; margin-bottom: 14px; }
   .row-btn { display: flex; gap: 12px; margin-bottom: 16px; }
   .item-row { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: nowrap; }
   .inp-name { font-size: 17px; padding: 14px; border: 1px solid #ddd; border-radius: 10px; width: 0; flex: 2.5; }
   .inp-dose { font-size: 17px; padding: 16px; border: 1px solid #ddd; border-radius: 10px; width: 0; flex: 1; }
   .weight-text { min-width: 75px; text-align: right; color:#333; font-weight: 500; font-size:17px; }
-  .total-line { font-size: 22px; margin:18px 0; color:#222; }
-  #method { width: 100%; padding:16px; border:1px solid #ddd; border-radius:12px; font-size:19px; margin-bottom:22px; }
+  .group-subtotal { font-size: 19px; margin:12px 0; color:#444; }
+  .total-line { font-size: 24px; margin:20px 0; color:#222; font-weight:bold; }
+  .method { width: 100%; padding:16px; border:1px solid #ddd; border-radius:12px; font-size:19px; margin-top:12px; }
   .btn { flex:1; padding:16px; border:none; border-radius:12px; background:#2b70c9; color:#fff; font-size:19px; }
   .btn-danger { background:#e64949; }
   .btn-sm { width: 40px; height: 40px; padding: 0; border:none; border-radius: 8px; background:#e64949; color:#fff; font-size:18px; display:grid; place-items:center; }
+  .btn-sm.blue { background:#2b70c9; }
   input.short { width: 100px; padding:14px; border:1px solid #ddd; border-radius:12px; font-size:19px; }
   .label-txt { margin:0 8px; font-size:19px; }
   .archive-panel { background:#fff; padding:16px; border-radius:12px; margin: 12px 0; box-shadow: 0 1px 4px #00000018; }
@@ -28,33 +31,24 @@
 </head>
 <body>
 
-<div class="row-top">
-  <input class="short" id="timesPerDay" type="number" value="0">
-  <span class="label-txt">次</span>
-  <input class="short" id="dayCount" type="number" value="0">
-  <span class="label-txt">天</span>
-</div>
-
-<div id="list"></div>
-
 <div class="row-btn">
-  <button class="btn" onclick="addRow()">添加中药</button>
-  <button class="btn btn-danger" onclick="clearAll()">清空药方</button>
+  <button class="btn" onclick="addPrescription()">追加处方</button>
+  <button class="btn btn-danger" onclick="clearAll()">清空全部</button>
 </div>
 
-<div class="total-line">总重量：<span id="totalWeight">0.00</span> g</div>
+<div id="container"></div>
 
-<input id="method" placeholder="服法">
+<div class="total-line">全部合计：<span id="grandTotal">0.00</span> g</div>
 
 <div id="archivePanel" class="archive-panel" style="display:none;">
   <div id="archiveList"></div>
 </div>
 <div class="row-btn">
   <button class="btn" onclick="toggleArchive()">载入存档</button>
-  <button class="btn" onclick="savePrescription()">保存</button>
+  <button class="btn" onclick="savePrescription()">保存整套</button>
 </div>
 <div class="row-btn">
-  <button class="btn" onclick="copyText()">复制单</button>
+  <button class="btn" onclick="copyText()">复制全部</button>
   <button class="btn" onclick="exportBackup()">导出备份</button>
   <button class="btn" onclick="document.getElementById('importFile').click()">导入备份</button>
   <input type="file" id="importFile" accept=".json" hidden onchange="importBackup(this)" />
@@ -62,34 +56,28 @@
 
 <script>
 const $ = id => document.getElementById(id);
-let archive = JSON.parse(localStorage.getItem('prescriptionArchive') || '[]');
-let workingDefault = {
+const MIN_ROW = 3;
+const emptyGroup = () => ({
+  times: 0,
+  days: 0,
+  method: '',
   list: [
     { name: '', dose: '' },
     { name: '', dose: '' },
-    { name: '', dose: '' },
-    { name: '', dose: '' },
     { name: '', dose: '' }
-  ],
-  times: 0,
-  days: 0,
-  method: ''
-};
+  ]
+});
+
+let archive = JSON.parse(localStorage.getItem('prescriptionArchive') || '[]');
+let workingDefault = { groups: [ emptyGroup() ] };
 let working = JSON.parse(localStorage.getItem('workingPrescription') || JSON.stringify(workingDefault));
-let data = [];
+let groups = [];
 let archiveOpen = false;
 
 function rawNum(v) {
   const n = parseFloat(v);
   return isNaN(n) ? 0 : n;
 }
-function getParams() {
-  return {
-    times: rawNum($('timesPerDay').value),
-    days: rawNum($('dayCount').value)
-  };
-}
-
 function goodNumber(v) {
   if (v === '' || v === '.') return true;
   return /^\d+(\.\d{0,2})?$/.test(v);
@@ -98,19 +86,13 @@ function doseVal(raw) {
   const n = parseFloat(raw);
   return isNaN(n) ? 0 : n;
 }
-
 function ensureMinRows(arr) {
-  while (arr.length < 5) {
-    arr.push({ name: '', dose: '' });
-  }
+  while (arr.length < MIN_ROW) arr.push({ name: '', dose: '' });
   return arr;
 }
 
 function saveWorking() {
-  working.list = JSON.parse(JSON.stringify(data));
-  working.times = rawNum($('timesPerDay').value);
-  working.days = rawNum($('dayCount').value);
-  working.method = $('method').value;
+  working.groups = JSON.parse(JSON.stringify(groups));
   localStorage.setItem('workingPrescription', JSON.stringify(working));
 }
 function saveArchive() {
@@ -118,62 +100,87 @@ function saveArchive() {
 }
 
 function render() {
-  $('list').innerHTML = '';
-  const { times, days } = getParams();
-  let sumTotal = 0;
-  data.forEach((it, idx) => {
-    const single = doseVal(it.dose);
-    const total = single * times * days;
-    sumTotal += total;
-    const div = document.createElement('div');
-    div.className = 'item-row';
-    div.innerHTML = `
-      <input class="inp-name" placeholder="药名" value="${it.name || ''}"
-             oninput="updateName(${idx}, this.value)"
-             onblur="render()" />
-      <input class="inp-dose" placeholder="单次(g)" value="${it.dose ?? ''}"
-             oninput="checkDose(${idx}, this)"
-             onblur="render()" />
-      <span class="weight-text">${total.toFixed(2)}g</span>
-      <button class="btn-sm" onclick="del(${idx})">−</button>
+  const wrap = $('container');
+  wrap.innerHTML = '';
+  let grand = 0;
+
+  groups.forEach((g, gid) => {
+    const block = document.createElement('div');
+    block.className = 'prescription-block';
+    let sub = 0;
+    let html = `
+      <div class="row-top">
+        <input class="short" value="${g.times}" oninput="updateGroup(${gid},'times',this.value)">
+        <span class="label-txt">次</span>
+        <input class="short" value="${g.days}" oninput="updateGroup(${gid},'days',this.value)">
+        <span class="label-txt">天</span>
+        <button class="btn-sm blue" onclick="addLine(${gid})">+行</button>
+        <button class="btn-sm" onclick="delGroup(${gid})">删此方</button>
+      </div>
     `;
-    $('list').appendChild(div);
+    g.list.forEach((it, lid) => {
+      const s = doseVal(it.dose);
+      const rowTotal = s * rawNum(g.times) * rawNum(g.days);
+      sub += rowTotal;
+      html += `
+        <div class="item-row">
+          <input class="inp-name" placeholder="药名" value="${it.name||''}"
+            oninput="updateLine(${gid},${lid},'name',this.value)">
+          <input class="inp-dose" placeholder="单次(g)" value="${it.dose??''}"
+            oninput="checkLine(${gid},${lid},this)">
+          <span class="weight-text">${rowTotal.toFixed(2)}g</span>
+          <button class="btn-sm" onclick="delLine(${gid},${lid})">−</button>
+        </div>
+      `;
+    });
+    grand += sub;
+    html += `<div class="group-subtotal">本组小计：${sub.toFixed(2)} g</div>`;
+    html += `<input class="method" placeholder="服法" value="${g.method||''}" oninput="updateGroup(${gid},'method',this.value)">`;
+    block.innerHTML = html;
+    wrap.appendChild(block);
   });
-  $('totalWeight').textContent = sumTotal.toFixed(2);
+
+  $('grandTotal').textContent = grand.toFixed(2);
   saveWorking();
 }
 
-function updateName(idx, val) {
-  data[idx].name = val;
-}
-
-function checkDose(idx, el) {
-  const v = el.value;
-  if (goodNumber(v)) {
-    data[idx].dose = v;
-  } else {
-    el.value = data[idx].dose ?? '';
-  }
-}
-
-function del(i) {
-  data.splice(i, 1);
-  ensureMinRows(data);
+function updateGroup(gid, key, val) {
+  groups[gid][key] = val;
   render();
 }
-
-function clearAll() {
-  if (confirm('确定清空药方？')) {
-    data = JSON.parse(JSON.stringify(workingDefault.list));
-    $('timesPerDay').value = 0;
-    $('dayCount').value = 0;
-    $('method').value = '';
-    render();
-  }
+function updateLine(gid, lid, key, val) {
+  groups[gid].list[lid][key] = val;
 }
-
-function addRow() {
-  data.push({ name: '', dose: '' });
+function checkLine(gid, lid, el) {
+  const v = el.value;
+  if (goodNumber(v)) {
+    groups[gid].list[lid].dose = v;
+  } else {
+    el.value = groups[gid].list[lid].dose ?? '';
+  }
+  render();
+}
+function addLine(gid) {
+  groups[gid].list.push({ name: '', dose: '' });
+  render();
+}
+function delLine(gid, lid) {
+  groups[gid].list.splice(lid, 1);
+  ensureMinRows(groups[gid].list);
+  render();
+}
+function addPrescription() {
+  groups.push(emptyGroup());
+  render();
+}
+function delGroup(gid) {
+  if (groups.length <= 1) return alert('至少保留一处方');
+  groups.splice(gid, 1);
+  render();
+}
+function clearAll() {
+  if (!confirm('清空全部处方？')) return;
+  groups = [ emptyGroup() ];
   render();
 }
 
@@ -189,120 +196,103 @@ function renderArchiveList() {
     line.className = 'archive-item';
     line.innerHTML = `
       <span>${item.name}</span>
-      <button class="btn-sm" style="background:#2b70c9;" onclick="loadArchive(${idx})">载入</button>
-      <button class="btn-sm" style="background:#2b70c9;" onclick="renameArchive(${idx})">改名</button>
+      <button class="btn-sm blue" onclick="loadArchive(${idx})">载入</button>
+      <button class="btn-sm blue" onclick="renameArchive(${idx})">改名</button>
       <button class="btn-sm" onclick="delArchive(${idx})">−</button>
     `;
     box.appendChild(line);
   })
 }
-
 function toggleArchive() {
   archiveOpen = !archiveOpen;
   $('archivePanel').style.display = archiveOpen ? 'block' : 'none';
   if (archiveOpen) renderArchiveList();
 }
-
 function loadArchive(idx) {
   const s = archive[idx];
-  $('timesPerDay').value = rawNum(s.times);
-  $('dayCount').value = rawNum(s.days);
-  $('method').value = s.method ?? '';
-  data = Array.isArray(s.list) ? JSON.parse(JSON.stringify(s.list)) : [];
-  ensureMinRows(data);
+  groups = JSON.parse(JSON.stringify(s.groups));
+  groups.forEach(g => ensureMinRows(g.list));
   render();
   alert('✅ 已载入：' + s.name);
 }
-
 function delArchive(idx) {
-  if (!confirm('确定删除这条存档？')) return;
+  if (!confirm('删除存档？')) return;
   archive.splice(idx, 1);
   saveArchive();
   renderArchiveList();
 }
-
 function renameArchive(idx) {
   const old = archive[idx].name;
-  const newName = prompt('修改存档名称：', old);
-  if (newName && newName.trim()) {
-    archive[idx].name = newName.trim();
-    saveArchive();
-    renderArchiveList();
-  }
+  const n = prompt('存档名：', old);
+  if (n && n.trim()) { archive[idx].name = n.trim(); saveArchive(); renderArchiveList(); }
 }
 
 function copyText() {
-  const { times, days } = getParams();
-  const method = $('method').value.trim();
-  let out = `每日 ${times.toFixed(2)} 次，共 ${days.toFixed(2)} 天\n\n`;
-  let sumTotal = 0;
-  data.forEach(it => {
-    const single = doseVal(it.dose);
-    const total = single * times * days;
-    out += `${(it.name || '').trim() || '无名药'}，${single.toFixed(2)}g，${total.toFixed(2)}g\n`;
-    sumTotal += total;
-  })
-  out += `\n总重：${sumTotal.toFixed(2)}g`;
-  if (method) out += `\n服法：${method}`;
-  navigator.clipboard.writeText(out);
-  alert('✅ 已复制抓药单');
-}
-
-function savePrescription() {
-  const name = prompt('输入此方名称：');
-  if (!name || !name.trim()) return;
-  const times = rawNum($('timesPerDay').value);
-  const days = rawNum($('dayCount').value);
-  const method = $('method').value;
-  archive.push({
-    name: name.trim(),
-    times,
-    days,
-    method,
-    list: JSON.parse(JSON.stringify(data))
+  let out = '';
+  groups.forEach((g, gi) => {
+    const t = rawNum(g.times);
+    const d = rawNum(g.days);
+    out += `【处方 ${gi+1}】\n每日 ${t.toFixed(2)} 次，共 ${d.toFixed(2)} 天\n\n`;
+    let sum = 0;
+    g.list.forEach(it => {
+      const s = doseVal(it.dose);
+      const rowTotal = s * t * d;
+      sum += rowTotal;
+      out += `${(it.name||'').trim() || '无名药'}，${s.toFixed(2)}g，${rowTotal.toFixed(2)}g\n`;
+    });
+    out += `本组小计：${sum.toFixed(2)}g`;
+    if (g.method?.trim()) out += `\n服法：${g.method.trim()}`;
+    out += '\n\n';
   });
-  saveArchive();
-  alert('✅ 已保存：' + name.trim());
+  let grand = 0;
+  groups.forEach(g => {
+    const t = rawNum(g.times);
+    const d = rawNum(g.days);
+    g.list.forEach(it => grand += doseVal(it.dose) * t * d);
+  });
+  out += `==== 全部合计：${grand.toFixed(2)} g ====`;
+  navigator.clipboard.writeText(out);
+  alert('✅ 已复制全部处方');
 }
-
+function savePrescription() {
+  const name = prompt('整套处方存档名称：');
+  if (!name || !name.trim()) return;
+  archive.push({ name: name.trim(), groups: JSON.parse(JSON.stringify(groups)) });
+  saveArchive();
+  alert('✅ 已保存整套');
+}
 function exportBackup() {
   const payload = { archive, savedAt: new Date().toLocaleString() };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `药方备份_${new Date().toISOString().slice(0,10)}.json`;
+  a.download = `多处方备份_${new Date().toISOString().slice(0,10)}.json`;
   a.click();
   URL.revokeObjectURL(url);
 }
-
 function importBackup(input) {
   const file = input.files[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
+  const r = new FileReader();
+  r.onload = e => {
     try {
       const obj = JSON.parse(e.target.result);
-      if (!Array.isArray(obj.archive)) throw '格式错误';
-      if (confirm('导入会覆盖全部存档，确定？')) {
+      if (!Array.isArray(obj.archive)) throw 'bad';
+      if (confirm('导入覆盖存档？')) {
         archive = obj.archive;
         saveArchive();
         renderArchiveList();
-        alert('✅ 导入成功！');
+        alert('✅ 导入成功');
       }
-    } catch {
-      alert('❌ 文件无效');
-    }
-  }
-  reader.readAsText(file);
+    } catch { alert('❌ 文件无效'); }
+  };
+  r.readAsText(file);
 }
 
-// 初始化
-data = Array.isArray(working.list) ? JSON.parse(JSON.stringify(working.list)) : [];
-ensureMinRows(data);
-$('timesPerDay').value = rawNum(working.times);
-$('dayCount').value = rawNum(working.days);
-$('method').value = working.method ?? '';
+// init
+groups = Array.isArray(working.groups) ? JSON.parse(JSON.stringify(working.groups)) : [ emptyGroup() ];
+groups.forEach(g => ensureMinRows(g.list));
 render();
 </script>
 </body>
