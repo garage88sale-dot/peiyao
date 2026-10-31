@@ -127,10 +127,12 @@ function render() {
       </div>
     `;
     let runningSum = 0;
+    let sumPerTime = 0;
     g.list.forEach((it, lid) => {
       const s = doseVal(it.dose);
       const rowTotal = s * t * d;
       runningSum += rowTotal;
+      sumPerTime += s;
       onceTotal += rowTotal;
       html += `
         <div class="item-row">
@@ -147,6 +149,7 @@ function render() {
     });
     grandTotalAll += onceTotal;
     html += `<div class="group-subtotal">本帖合计：${onceTotal.toFixed(2)}g</div>`;
+    html += `<div class="group-subtotal">1 次量 : ${sumPerTime.toFixed(2)} g &nbsp;&nbsp; ${d}天量 ： ${onceTotal.toFixed(2)} g</div>`;
     html += `<input class="method" placeholder="服法" value="${g.method||''}" oninput="updateGroup(${gid},'method',this.value)">`;
     block.innerHTML = html;
     wrap.appendChild(block);
@@ -251,14 +254,18 @@ function copyText() {
     const d = rawNum(g.days);
     out += `【药方】${t}次 / ${d}天\n`;
     let run = 0;
+    let sumPerTime = 0;
     g.list.forEach(it => {
       if (!it.name && !it.dose) return;
       const s = doseVal(it.dose);
       const rowTotal = s * t * d;
       run += rowTotal;
+      sumPerTime += s;
       out += `${it.name || '？'}：${it.dose}g，该味总量 ${rowTotal.toFixed(2)}g，累计 ${run.toFixed(2)}g\n`;
     })
-    out += `本帖合计：${run.toFixed(2)}g\n服法：${g.method || ''}\n\n`;
+    out += `本帖合计：${run.toFixed(2)}g\n`;
+    out += `1 次量 : ${sumPerTime.toFixed(2)} g   ${d}天量 ： ${run.toFixed(2)} g\n`;
+    out += `服法：${g.method || ''}\n\n`;
   })
   navigator.clipboard.writeText(out).then(() => alert('✅ 已复制'));
 }
