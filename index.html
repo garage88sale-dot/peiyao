@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>配药计算器</title>
+<meta name="theme-color" content="#2b78e4">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Crect width='180' height='180' rx='24' fill='%232b78e4'/%3E%3Ctext x='90' y='110' font-size='80' fill='white' text-anchor='middle'%3E药%3C/text%3E%3C/svg%3E">
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22%E9%85%8D%E8%8D%AF%E8%AE%A1%E7%AE%97%E5%99%A8%22%2C%22short_name%22%3A%22%E9%85%8D%E8%8D%AF%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22theme_color%22%3A%22%232b78e4%22%2C%22background_color%22%3A%22%23ffffff%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%2520width%3D'192'%2520height%3D'192'%253E%253Crect%2520width%3D'192'%2520height%3D'192'%2520rx%3D'24'%2520fill%3D'%25232b78e4'%252F%253E%253Ctext%2520x%3D'96'%2520y%3D'116'%2520font-size%3D'84'%2520fill%3D'white'%2520text-anchor%3D'middle'%253E%E8%8D%AF%253C%2Ftext%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%2C%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%2520width%3D'512'%2520height%3D'512'%253E%253Crect%2520width%3D'512'%2520height%3D'512'%2520rx%3D'64'%2520fill%3D'%25232b78e4'%252F%253E%253Ctext%2520x%3D'256'%2520y%3D'310'%2520font-size%3D'220'%2520fill%3D'white'%2520text-anchor%3D'middle'%253E%E8%8D%AF%253C%2Ftext%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body{padding:16px;background:#f7f8fa}
+.box{background:#fff;border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+h3{margin-bottom:12px;color:#222;font-size:18px}
+.row{display:flex;gap:10px;margin-bottom:10px}
+input{flex:1;padding:10px;border:1px solid #ddd;border-radius:10px;font-size:16px}
+.btn{padding:11px;border:none;border-radius:10px;background:#2b78e4;color:#fff;font-size:16px}
+.del{background:#ff4d4f}
+.item{display:flex;gap:10px;align-items:center;margin:10px 0}
+</style>
+</head>
+<body>
+<div class="box">
+  <h3>参数（只填一次）</h3>
+  <div class="row">
+    <input id="times" type="number" value="2" placeholder="每日次数">
+    <input id="days" type="number" value="7" placeholder="天数">
+  </div>
+</div>
+
+<div class="box">
+  <h3>药方</h3>
+  <div id="list"></div>
+  <button class="btn" onclick="addRow()">➕ 添加一味药</button>
+</div>
+
+<div class="box">
+  <button class="btn" style="width:100%" onclick="copyText()">📋 复制清单（发给抓药）</button>
+</div>
+
+<script>
+const swSource = `
+const CACHE_NAME = 'peiyao-v2';
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(['./'])));
+  self.skipWaiting();
+});
+self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+self.addEventListener('fetch', e => {
+  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+});
+`;
+if ('serviceWorker' in navigator) {
+  const blob = new Blob([swSource], {type: 'application/javascript'});
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl, {scope: './'}).catch(()=>{});
+}
+
+let data = JSON.parse(localStorage.getItem('prescription') || '[]')
+const $ = id => document.getElementById(id)
+function save(){ localStorage.setItem('prescription', JSON.stringify(data)) }
+function render(){
+  $('list').innerHTML = ''
+  data.forEach((it,idx)=>{
+    const div = document.createElement('div')
+    div.className = 'item'
+    div.innerHTML = `
+      <input placeholder="药名" value="${it.name||''}" onchange="upd(${idx},'name',this.value)">
+      <input placeholder="单次(g)" value="${it.dose||''}" onchange="upd(${idx},'dose',Number(this.value))">
+      <span>${calcOne(it.dose)}g</span>
+      <button class="btn del" onclick="del(${idx})">−</button>
+    `
+    $('list').appendChild(div)
+  })
+}
+function getParam(){
+  return { t: Number($('times').value)||1, d: Number($('days').value)||1 }
+}
+function calcOne(v){
+  const {t,d}=getParam()
+  return ((Number(v)||0)*t*d).toFixed(2)
+}
+function addRow(){ data.push({name:'',dose:''}); save(); render() }
+function upd(i,k,v){ data[i][k]=v; save(); render() }
+function del(i){ data.splice(i,1); save(); render() }
+function copyText(){
+  const {t,d}=getParam()
+  let s = `每日 ${t} 次，共 ${d} 天\n`
+  let sum = 0
+  data.forEach(it=>{
+    const total = Number(calcOne(it.dose))
+    if(it.name && total>0){
+      s += `${it.name}：${total}g\n`
+      sum += total
+    }
+  })
+  s += `合计：${sum.toFixed(2)}g`
+  navigator.clipboard.writeText(s)
+  alert('✅ 药方已经复制')
+}
+render()
+$('times').oninput = render
+$('days').oninput = render
+</script>
+</body>
+</html>
